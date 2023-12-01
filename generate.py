@@ -1,5 +1,4 @@
 import fnmatch
-import json
 import argparse
 import pandas
 
@@ -10,30 +9,15 @@ from accelerate import Accelerator
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
+    AutoConfig,
     pipeline,
 )
+from tqdm import tqdm
 
 try:
     from optimum.intel import OVModelForCausalLM
 except ImportError:
     print("Not import optimum.intel")
-
-
-class MultiChoice:
-    def __init__(self, choices):
-        self.choices = choices
-
-    # Simple wildcard support (linux filename patterns)
-    def __contains__(self, values):
-        for value in values.split(","):
-            if len(fnmatch.filter(self.choices, value)) == 0:
-                return False
-
-        return True
-
-    def __iter__(self):
-        for choice in self.choices:
-            yield choice
 
 
 def parse_args():
@@ -85,7 +69,7 @@ def parse_args():
     parser.add_argument(
         "--max_length_generation",
         type=int,
-        default=512,
+        default=256,
         help="Maximum length of generated sequence (prompt+generation)",
     )
     parser.add_argument(
@@ -129,23 +113,20 @@ def get_gpus_max_memory(max_memory, num_gpus):
     return max_memory
 
 
-def generate(model, tokenizer, csv_name, out_name):
+def generate(model, tokenizer, device, csv_name, out_name, max_new_tokens):
     data = pandas.read_csv(csv_name)
-    
-    res = []
     questions = data['questions']
-    pipe = pipeline('text-generation', model=model, tokenizer=tokenizer, max_new_tokens=640)
+    pipe = pipeline('text-generation', model=model, tokenizer=tokenizer, max_new_tokens=max_new_tokens, device=device)
     
     answers = []
     
-    for q in questions.values:
+    for q in tqdm(questions.values):
         out = pipe(q)
         out = out[0]['generated_text']
         answers.append(out[len(q):])
 
-    
-    dict = {'questions': list(questions.values), 'answers': answers}
-    df = pandas.DataFrame(dict)
+    res_data = {'questions': list(questions.values), 'answers': answers}
+    df = pandas.DataFrame(res_data)
     df.to_csv(out_name)
 
 
@@ -187,15 +168,38 @@ def main():
 
 
     if args.modeltype == "causal":
+        device = "cuda" if torch.cuda.is_available() else "cpu"
         model = AutoModelForCausalLM.from_pretrained(
             args.model,
             **model_kwargs,
-        )
+        ).to(device)
     elif args.modeltype == 'ov_causal':
-        model = OVModelForCausalLM.from_pretrained(
-            args.model,
-            **model_kwargs,
-        )
+        device = 'cpu'
+        try:
+            model = OVModelForCausalLM.from_pretrained(
+                args.model,
+                **model_kwargs,
+            )
+        except:
+            from optimum.utils import NormalizedTextConfig, NormalizedConfigManager
+            from optimum.exporters import TasksManager
+            
+            TasksManager._SUPPORTED_MODEL_TYPE[
+                "stablelm-epoch"
+            ] = TasksManager._SUPPORTED_MODEL_TYPE["llama"]
+            NormalizedConfigManager._conf[
+                "stablelm-epoch"
+            ] = NormalizedTextConfig.with_args(
+                num_layers="num_hidden_layers",
+                num_attention_heads="num_attention_heads",
+            )
+            config = AutoConfig.from_pretrained(args.model, trust_remote_code=True)
+            model = OVModelForCausalLM.from_pretrained(
+                args.model,
+                config=config,
+                trust_remote_code=True,
+                use_cache=True,
+            )
     else:
         raise ValueError(
             f"Non valid modeltype {args.modeltype}, choose from: causal, ov_causal"
@@ -232,7 +236,7 @@ def main():
         tokenizer.bos_token_id = 1
         print("Changing bos_token to <s>")
 
-    generate(model, tokenizer, args.csv, args.save_generations_path)
+    generate(model, tokenizer, device, args.csv, args.save_generations_path, args.max_length_generation)
 
 
 if __name__ == "__main__":
