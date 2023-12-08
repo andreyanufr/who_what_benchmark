@@ -6,10 +6,12 @@ import datasets
 import torch
 import transformers
 from accelerate import Accelerator
+
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     AutoConfig,
+    GPTQConfig,
     pipeline,
 )
 from tqdm import tqdm
@@ -94,6 +96,12 @@ def parse_args():
         default="generations.csv",
         help="Path for saving the code generations",
     )
+    parser.add_argument(
+        "--group_size",
+        type=int,
+        default=-1,
+        help="group_size for GPTQ algorithm. If > 0 the GPTQ compression will be used.",
+    )
     return parser.parse_args()
 
 
@@ -166,9 +174,33 @@ def main():
         print(f"Loading model in {args.precision}")
         model_kwargs["torch_dtype"] = dict_precisions[args.precision]
 
+    tokenizer = AutoTokenizer.from_pretrained(
+        args.model,
+        revision=args.revision,
+        trust_remote_code=args.trust_remote_code,
+        use_auth_token=args.use_auth_token,
+        truncation_side="left",
+        padding_side="right",  # padding on the right is needed to cut off padding in `complete_code`
+    )
+    if not tokenizer.eos_token:
+        if tokenizer.bos_token:
+            tokenizer.eos_token = tokenizer.bos_token
+            print("bos_token used as eos_token")
+        else:
+            raise ValueError("No eos_token or bos_token found")
+    try:
+        tokenizer.pad_token = tokenizer.eos_token
+    # Some models like CodeGeeX2 have pad_token as a read-only property
+    except AttributeError:
+        print("Not setting pad_token to eos_token")
+        pass
 
     if args.modeltype == "causal":
         device = "cuda" if torch.cuda.is_available() else "cpu"
+        if args.group_size > 0:
+            quantization_config = GPTQConfig(bits=4, dataset = "c4", tokenizer=tokenizer, group_size=args.group_size, model_seqlen=1024)
+            model_kwargs['quantization_config'] = quantization_config
+
         model = AutoModelForCausalLM.from_pretrained(
             args.model,
             **model_kwargs,
@@ -205,27 +237,7 @@ def main():
             f"Non valid modeltype {args.modeltype}, choose from: causal, ov_causal"
         )
 
-    tokenizer = AutoTokenizer.from_pretrained(
-        args.model,
-        revision=args.revision,
-        trust_remote_code=args.trust_remote_code,
-        use_auth_token=args.use_auth_token,
-        truncation_side="left",
-        padding_side="right",  # padding on the right is needed to cut off padding in `complete_code`
-    )
-    if not tokenizer.eos_token:
-        if tokenizer.bos_token:
-            tokenizer.eos_token = tokenizer.bos_token
-            print("bos_token used as eos_token")
-        else:
-            raise ValueError("No eos_token or bos_token found")
-    try:
-        tokenizer.pad_token = tokenizer.eos_token
-        
-    # Some models like CodeGeeX2 have pad_token as a read-only property
-    except AttributeError:
-        print("Not setting pad_token to eos_token")
-        pass
+
     WIZARD_LLAMA_MODELS = [
         "WizardLM/WizardCoder-Python-34B-V1.0",
         "WizardLM/WizardCoder-34B-V1.0",

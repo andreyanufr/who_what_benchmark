@@ -62,6 +62,8 @@ def evaluate_divergency(tokenizer, data_gold, data_prediction ):
     metric_per_question = {
         'FDT': fdt_list,
         'SDT': sdt_list,
+        'FDT norm': np.array(fdt_list) / fdt_max,
+        'SDTR norm': np.array(sdtr_list) / fdt_max,
     }
 
     fdt_avg = np.average(fdt_list)
