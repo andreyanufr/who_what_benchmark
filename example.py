@@ -21,7 +21,7 @@ all_metrics_per_question, all_metrics = evaluator.score(model_small)
 print(all_metrics_per_question)
 print(all_metrics)
 
-metrics = ["similarity", "SDTR norm"]
+metrics = ["similarity", "SDT norm"]
 
 for metric in metrics:
     worst_examples = evaluator.worst_examples(top_k=5, metric=metric)

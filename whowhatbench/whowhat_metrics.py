@@ -28,7 +28,7 @@ def evaluate_divergency(tokenizer, data_gold, data_prediction ):
 
     DEBUG = False
     # NOTE: a - reference answers, b - answers to evaluate
-    fdt_list, sdt_list, sdtr_list, fdt_max = [], [], [], []
+    fdt_list, sdt_list, sdtn_list, fdt_max = [], [], [], []
 
     for a_answer, b_answer in zip(answers_gold, answers_prediction):
         a_indexes = tokenizer.encode(a_answer, return_tensors="pt").squeeze().tolist()
@@ -44,8 +44,10 @@ def evaluate_divergency(tokenizer, data_gold, data_prediction ):
         fdt_list.append(fdt)
 
         num_matched = sum(block.size for block in blocks)
-        sdt_list.append(len(b_indexes) - num_matched)   # how many tokens to correct in the prediction
-        sdtr_list.append(len(a_indexes) - num_matched)  # how many tokens to correct in the gold
+        sdt = len(b_indexes) - num_matched  # how many tokens to correct in the prediction
+        sdt_list.append(sdt)
+        sdt_norm = sdt / len(b_indexes)  # share of tokens to correct in the prediction
+        sdtn_list.append(sdt_norm)
 
         if DEBUG:
             print(blocks)
@@ -63,7 +65,7 @@ def evaluate_divergency(tokenizer, data_gold, data_prediction ):
         'FDT': fdt_list,
         'SDT': sdt_list,
         'FDT norm': np.array(fdt_list) / fdt_max,
-        'SDTR norm': np.array(sdtr_list) / fdt_max,
+        'SDT norm': sdtn_list,
     }
 
     fdt_avg = np.average(fdt_list)
@@ -71,7 +73,7 @@ def evaluate_divergency(tokenizer, data_gold, data_prediction ):
         'FDT': fdt_avg,
         'SDT': np.average(sdt_list),
         'FDT norm': fdt_avg / fdt_max,
-        'SDTR norm': np.average(sdtr_list) / fdt_max,
+        'SDT norm': np.average(sdtn_list),
     }
 
     return metric_dict, metric_per_question
