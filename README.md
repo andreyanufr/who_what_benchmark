@@ -44,7 +44,6 @@ for e in worst_examples:
 
 ### CLI example
 
-* Step-by-step bullets
 ```
 # run text generation for original model
 python3 generate.py --modeltype causal --model meta-llama/Llama-2-7b-chat-hf --save_generations_path gold_llama-2-7b-chat-hf.csv --csv simple.csv --trust_remote_code
