@@ -5,8 +5,6 @@ from transformers import (
 
 import whowhatbench
 
-max_new_tokens = 128
-
 
 model_id = "meta-llama/Llama-2-7b-chat-hf"
 
