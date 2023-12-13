@@ -63,18 +63,18 @@ class Evaluator():
 
     def dump_gt(self, csv_name: str):
         self.gt_data.to_csv(csv_name)
-    
+
     def score(self, model):
         predictions = self._generate_data(model)
 
         all_metrics_per_question = {}
         all_metrics = {}
-        
+
         if self.similarity:
             metric_dict, metric_per_question = self.similarity.evaluate(self.gt_data, predictions)
             all_metrics.update(metric_dict)
             all_metrics_per_question.update(metric_per_question)
-        
+
         if self.divergency:
             metric_dict, metric_per_question = self.divergency.evaluate(self.gt_data, predictions)
             all_metrics.update(metric_dict)
@@ -92,7 +92,7 @@ class Evaluator():
     def worst_examples(self, top_k: int = 5, metric='similarity'):
         assert self.last_cmp is not None
 
-        if metric in ['SDT', 'SDTR norm']:
+        if metric in ['SDT', 'SDT norm']:
             res = self.last_cmp.nlargest(top_k, metric)
         else:
             res = self.last_cmp.nsmallest(top_k, metric)
