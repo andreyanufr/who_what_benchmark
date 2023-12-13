@@ -1,10 +1,10 @@
 # Simple Accuracy Benchmark for Optimized LLMs
 
 Simple and quick accuracy test for compressed, quantized, pruned, distilled LLMs. It works with any model that suppors HuggingFace Transformers text generation API including:
-* HuggingFace Transformers 8-bit/4-bit compressed models via [Bitsandbytes](https://huggingface.co/docs/transformers/main_classes/quantization#transformers.BitsAndBytesConfig)
+* HuggingFace Transformers compressed models via [Bitsandbytes](https://huggingface.co/docs/transformers/main_classes/quantization#transformers.BitsAndBytesConfig)
 * [GPTQ](https://huggingface.co/docs/transformers/main_classes/quantization#transformers.GPTQConfig) via HuggingFace API
 * Llama.cpp via [BigDL-LLM](https://github.com/intel-analytics/BigDL/tree/main/python/llm)
-* OpenVINO via [Optimum-Intel](https://github.com/huggingface/optimum-intel)
+* [OpenVINO](https://github.com/openvinotoolkit/openvino) and [NNCF](https://github.com/openvinotoolkit/nncf) via [Optimum-Intel](https://github.com/huggingface/optimum-intel)
 
 The main idea is to compare similarity of text generation between baseline and optimized LLMs.
 
@@ -33,6 +33,15 @@ for e in worst_examples:
     print("\tBaseline Model:\n ", "\t" + e["source_model"])
     print("\tOptimized Model:\n ", "\t" + e["optimized_model"])
 
+```
+
+Use your own list of prompts to compare (e.g. from a dataset):
+```python
+from datasets import load_dataset
+val = load_dataset("lambada", split="validation[20:40]")
+prompts = val["text"]
+...
+metrics_per_prompt, metrics = evaluator.score(optimized_model, test_data=prompts)
 ```
 
 ### Installing
