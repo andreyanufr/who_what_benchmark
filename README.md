@@ -1,17 +1,39 @@
-# Simple benchmark for evaluating quality of compressed LLMs.
+# Simple Accuracy Benchmark for Optimized LLMs
 
-Simple and short test for evaluating quality of compressed, quantized, pruned LLMs.
-The best configuration is not guaranteed.
+Simple and quick accuracy test for compressed, quantized, pruned, distilled LLMs. It works with any model that suppors HuggingFace Transformers text generation API including:
+* HuggingFace Transformers 8-bit/4-bit compressed models via [Bitsandbytes](https://huggingface.co/docs/transformers/main_classes/quantization#transformers.BitsAndBytesConfig)
+* [GPTQ](https://huggingface.co/docs/transformers/main_classes/quantization#transformers.GPTQConfig) via HuggingFace API
+* Llama.cpp via [BigDL-LLM](https://github.com/intel-analytics/BigDL/tree/main/python/llm)
+* OpenVINO via [Optimum-Intel](https://github.com/huggingface/optimum-intel)
 
-## Description
+The main idea is to compare similarity of text generation between baseline and optimized LLMs.
 
-Implementation of short tests for understanding similarity of text generation between original and comperssed LLMs.
+The API provides a way to access to investigate the worst generated text examples.
 
-## Getting Started
+```python
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import whowhatbench
 
-### Dependencies
+model_id = "facebook/opt-1.3b"
+base_small = AutoModelForCausalLM.from_pretrained(model_id)
+optimized_model = AutoModelForCausalLM.from_pretrained(model_id, load_in_4bit=True, device_map="auto")
+tokenizer = AutoTokenizer.from_pretrained(model_id)
 
-* See requirements.txt
+evaluator = whowhatbench.Evaluator(base_model=base_small, tokenizer=tokenizer)
+metrics_per_prompt, metrics = evaluator.score(optimized_model)
+
+metric_of_interest = "similarity"
+print(metric_of_interest, ": ", metrics["similarity"][0])
+
+worst_examples = evaluator.worst_examples(top_k=5, metric=metric_of_interest)
+print("Metric: ", metric_of_interest)
+for e in worst_examples:
+    print("\t=========================")
+    print("\tPrompt: ", e["prompt"])
+    print("\tBaseline Model:\n ", "\t" + e["source_model"])
+    print("\tOptimized Model:\n ", "\t" + e["optimized_model"])
+
+```
 
 ### Installing
 
@@ -20,9 +42,8 @@ Implementation of short tests for understanding similarity of text generation be
 * source eval_env/bin/activate
 * pip install -r requirements.txt
 
-### Executing program
+### CLI example
 
-* How to run the program
 * Step-by-step bullets
 ```
 # run text generation for original model
