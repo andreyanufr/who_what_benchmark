@@ -13,8 +13,13 @@ tokenizer_small = AutoTokenizer.from_pretrained(model_small_id)
 model_id = "facebook/opt-350m"
 model = AutoModelForCausalLM.from_pretrained(model_id)
 tokenizer = AutoTokenizer.from_pretrained(model_id)
-
-evaluator = whowhatbench.Evaluator(base_model=model, tokenizer=tokenizer_small)
+test_data = ["Who is author of The Lord of the Rings?",
+             "Who was the first king of Norway?",
+             "Who is the most famous scientist in the field of artificial intelligence?",
+             "What is the Bronze Age?",
+             "What is the Gold Age?"
+             ]
+evaluator = whowhatbench.Evaluator(base_model=model, tokenizer=tokenizer_small, test_data=test_data)
 
 all_metrics_per_question, all_metrics = evaluator.score(model_small)
 

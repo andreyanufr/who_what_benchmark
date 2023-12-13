@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Union
 import pandas as pd
 from tqdm import tqdm
 
@@ -26,7 +26,15 @@ default_data = {
             "What is Java?",
             "What is JavaScript?",
             "What is Perl?",
-            "What is OpenCV?"
+            "What is OpenCV?",
+            "Who is the most famous writer?",
+            "Who is the most famous inventor?",
+            "Who is the most famous mathematician?",
+            "Who is the most famous composer?",
+            "Who is the most famous programmer?",
+            "Who is the most famous athlete?",
+            "Who is the most famous ancient Greek scientist?",
+            "What color will you get when you mix blue and yellow?"
         ]
 }
 
@@ -35,13 +43,13 @@ class Evaluator():
                  base_model: Any=None,
                  tokenizer: Any=None,
                  gt_data: str=None,
-                 test_data_path: str = None,
+                 test_data: Union[str, list] = None,
                  metrics = ("similarity", "divergency"),
                  similarity_model_id: str = "sentence-transformers/all-mpnet-base-v2",
                  max_new_tokens = 128) -> None:
         assert base_model is not None or gt_data is not None, "Text generation pipeline for evaluation or ground trush data must be defined"
 
-        self.test_data_path = test_data_path
+        self.test_data = test_data
         self.metrics = metrics
         self.max_new_tokens = max_new_tokens
         self.tokenizer = tokenizer
@@ -102,8 +110,16 @@ class Evaluator():
         return res
 
     def _generate_data(self, model):
-        if self.test_data_path:
-            data = pd.read_csv(self.test_data_path)
+        if self.test_data:
+            if isinstance(self.test_data, str):
+                data = pd.read_csv(self.test_data)
+            else:
+                if isinstance(self.test_data, dict):
+                    assert 'questions' in self.test_data
+                    data = dict(self.test_data)
+                else:
+                    data = {'questions': list(self.test_data)}
+                data = pd.DataFrame.from_dict(data)
         else:
             data = pd.DataFrame.from_dict(default_data)
 
