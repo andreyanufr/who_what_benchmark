@@ -119,6 +119,7 @@ class Evaluator():
                     data = dict(self.test_data)
                 else:
                     data = {'questions': list(self.test_data)}
+                data = pd.DataFrame.from_dict(data)
         else:
             data = pd.DataFrame.from_dict(default_data)
 
