@@ -11,7 +11,7 @@ setup(
     install_requires=[
         'transformers>=4.35.2',
         'sentence-transformers>=2.2.2',
-        'openvino-nightly==2023.3.0.dev20231113',
+        'openvino-nightly>=2023.3.0.dev20231212',
         'openvino-telemetry==2023.2.1',
         'optimum==1.14.1',
         'optimum-intel @ git+https://github.com/huggingface/optimum-intel.git@f248835b16ce4ec054d6d4d629dff4213fe94157',
