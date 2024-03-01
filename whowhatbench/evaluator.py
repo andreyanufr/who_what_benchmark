@@ -128,7 +128,7 @@ class Evaluator():
         answers = []
 
         for q in tqdm(questions.values, desc="Evaluate pipeline"):
-            inputs = self.tokenizer(q, return_tensors="pt")
+            inputs = self.tokenizer(q, return_tensors="pt").to(model.device)
             tokens = model.generate(**inputs, max_new_tokens=self.max_new_tokens)
             out = self.tokenizer.batch_decode(tokens, skip_special_tokens=True)[0]
             answers.append(out[len(q):])
