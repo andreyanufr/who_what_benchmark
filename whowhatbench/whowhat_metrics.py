@@ -14,11 +14,14 @@ def evaluate_similarity(model, data_gold, data_prediction ):
 
     metric_per_question = []
     for (gold, prediction) in tqdm(zip(answers_gold, answers_prediction), desc="Similarity evaluation"):
+        if len(gold) == 0:
+            metric_per_question.append(-1.0)
         embeddings = model.encode([gold, prediction])
         cos_sim = util.cos_sim(embeddings, embeddings)
         metric_per_question.append(cos_sim[0, 1].item())
 
-    metric_dict = {'similarity': np.mean(metric_per_question)}
+    metric_per_question_clear = list(filter(lambda x: x >= 0.0, metric_per_question))
+    metric_dict = {'similarity': np.mean(metric_per_question_clear)}
     return metric_dict, {'similarity': metric_per_question}
 
 
