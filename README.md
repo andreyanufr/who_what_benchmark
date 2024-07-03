@@ -1,4 +1,5 @@
 # Simple Accuracy Benchmark for Optimized LLMs
+Was moved to the [openvino.genai](https://github.com/openvinotoolkit/openvino.genai/tree/master/llm_bench/python/who_what_benchmark)
 
 Simple and quick accuracy test for compressed, quantized, pruned, distilled LLMs. It works with any model that suppors HuggingFace Transformers text generation API including:
 * HuggingFace Transformers compressed models via [Bitsandbytes](https://huggingface.co/docs/transformers/main_classes/quantization#transformers.BitsAndBytesConfig)
